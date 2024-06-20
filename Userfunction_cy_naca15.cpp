@@ -239,12 +239,12 @@ void Body::SetBodyParams(vector<Body> & abody, Mesh & amesh, vector<Body> & loca
 		GiveAFlag("Finish CheckBodyPatchCenter 2", 5);
         //设置质量 弹簧刚性 阻尼等系数，旋转运动还需要设置转动惯量、转动刚性以及转动阻尼。
         abody[i].mass = 0.082210;  // 质量比=10 无量纲质量
-        double fndamp = 0.286533;      // 振动频率
+        double fndamp = 0.12285;      // 振动频率
         abody[i].stiff = pow(2.0*pai*fndamp, 2.0)*abody[i].mass;
         abody[i].damping = 0.0;
         abody[i].rotdamping = 0.0;
         abody[i].inertia = 0.005220; // 与质量比相关联
-        double rotndamp = 0.286533;    // 扭转固有频率
+        double rotndamp = 0.12285;    // 扭转固有频率
         abody[i].rotstiff = pow(2.0*pai*rotndamp, 2.0)*abody[i].inertia;
 	}
 		for (int i = 0; i < bodynum; ++i)
