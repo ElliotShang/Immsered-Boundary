@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -N m50U10_val
+#PBS -q batch
+#PBS -l nodes=n52:ppn=28
+#PBS -o ./test.log
+#PBS -e ./test.err
+
+NSLOTS=`cat ${PBS_NODEFILE} | wc -l`
+#cat $PBS_NODEFILE >NODEFILE
+
+cd $PBS_O_WORKDIR
+MPIRUN=/opt/intel/impi/5.0.2.044/intel64/bin/mpirun
+PROGRAM=./main.exe
+
+export I_MPI_DEBUG=20
+$MPIRUN  -machinefile $PBS_NODEFILE -np $NSLOTS    $PROGRAM >log.txt
+
