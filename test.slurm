@@ -1,8 +1,9 @@
 #!/bin/bash
-#SBATCH -J Validate
+#SBATCH -J m20U6.59
 #SBATCH -p batch
 #SBATCH -N 1
 #SBATCH -n 32
+#SBATCH --exclude=master,node[2,4,6-7,25-27]
 #SBATCH -o log.out
 #SBATCH -e log.err
 
