@@ -129,7 +129,7 @@ void Body::ComptPatchParams()
 		vector<int> & move_from_out_to_in)
 	{
 		int bps, bpe;
-		double critic_dis = 6.0;
+		double critic_dis = 6.8;
 		amesh.m_level[level0].m_box.GlobalOrder(bps, bpe);
 		// bps = amesh.m_level[level0].m_box.ps();
 		// bpe = amesh.m_level[level0].m_box.pe();

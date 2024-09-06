@@ -33,7 +33,6 @@ const int max_mesh_level = 8;
 const int init_level_num = 8;
 
 const Point lowpt = Point(0,0,0);
-// const Point	highpt = Point(200,150,1);
 const Point	highpt = Point(250,188,1);
 
 string meshfile = "xyz-1.fmt";
@@ -78,7 +77,7 @@ void AMR::ADPRule(vector<Body> & abody)
 	}
 	double tag_diff = abody[0].inlineosc[1] - taglocation;
 	//if (abs(tag_diff) > 2.0*dh[max_mesh_level-1][0])
-    if (ts%int(2) == 0)
+    if (ts%int(1) == 0)
 	{
 		adpflag = true;
 		taglocation = abody[0].inlineosc[1];
@@ -130,7 +129,7 @@ void Body::Motion_Rule(Mesh & amesh, double & dt00)
     forthRK2DOF_Anal(inlineosc[1],free_tra_vel[1],
                      rotosc[2],free_rot_vel[2],
                      mass,inertia,damping,rotdamping,stiff,rotstiff,
-                     force[1],moment[2],-0.1105,mvdt);
+                     force[1],moment[2],-0.070432,mvdt);
     // -0.1105
     // -0.070432
     free_tra_vel[1] = free_tra_vel[1]/u_ref;
@@ -238,13 +237,13 @@ void Body::SetBodyParams(vector<Body> & abody, Mesh & amesh, vector<Body> & loca
 		//abody[i].CheckBodyPatchCenter();
 		GiveAFlag("Finish CheckBodyPatchCenter 2", 5);
         //设置质量 弹簧刚性 阻尼等系数，旋转运动还需要设置转动惯量、转动刚性以及转动阻尼。
-        abody[i].mass = 0.164419;  // 质量比=10 无量纲质量
-        double fndamp = 0.132978734;      // 振动频率
+        abody[i].mass = 0.082210;  // 质量比=10 无量纲质量
+        double fndamp = 0.14285714;      // 振动频率
         abody[i].stiff = pow(2.0*pai*fndamp, 2.0)*abody[i].mass;
         abody[i].damping = 0.0;
         abody[i].rotdamping = 0.0;
-        abody[i].inertia = 0.010440; // 与质量比相关联
-        double rotndamp = 0.132978734;    // 扭转固有频率
+        abody[i].inertia = 0.005220; // 与质量比相关联
+        double rotndamp = 0.2;    // 扭转固有频率
         abody[i].rotstiff = pow(2.0*pai*rotndamp, 2.0)*abody[i].inertia;
 	}
 		for (int i = 0; i < bodynum; ++i)
@@ -538,12 +537,12 @@ void AMR::TagtheBox(const int & ilevel, vector<Body> & abody)
         //rs re分别给出了环形网格区域最内侧和最外层距离壁面的距离
         //例如对于第4层网格，最内侧和最外侧距离壁面的距离分别为-5.0*dh[3][0]和0.5
         //dh[3][0]就是第三层网格x方向的网格尺寸，由于这里采用的xy尺寸一致的网格，所以dh[3][0]=dh[3][1],用哪一个都行
-        double re[7] = {0.0,0.0,0.0, 0.75, 0.4, 0.125,0.04};
+        double re[7] = {0.0,0.0,0.0, 0.8, 0.4, 0.125,0.04};
         double rs[7] = {0.0,0.0,0.0, -5.0*dh[3][0], -5.0*dh[4][0], -5.0*dh[5][0],-3.0*dh[6][0]};
         //矩形网格层左侧距离固壁左侧的距离
-        double up_length[4] = {4.5, 3.7, 3.0, 1.8};
+        double up_length[4] = {5.0, 4.0, 3.0, 1.8};
         //矩形网格层上下距离固壁上下的距离
-        double up_xrange[4] = {4.0,3.0,2.2,0.0};
+        double up_xrange[4] = {4.8,3.8,2.5,0.0};
         //矩形网格层右侧距离固壁右侧的距离
         double down_length[4] = {15.0, 10.0, 8.0, 12.0};
 

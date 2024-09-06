@@ -208,7 +208,7 @@ void TimeOperation(vector<Body> & sphere, vector<Body> & localbody, Pltoutput & 
 		// pltfile.Output_Grid("after_adp_grid", sphere);
 		// pltfile.Output_Soln("after_adp_soln", sphere);
 	}
-	if (ts%dts_plt == 0 && t > t_sum - 5.0/f_osc0)
+	if (ts%dts_plt == 0 && t > t_sum - 20.0)
 	{
 		pltfile.Output_Soln_Nobody("amr_soln");
 		if (gridisnew) 
