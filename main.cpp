@@ -208,9 +208,10 @@ void TimeOperation(vector<Body> & sphere, vector<Body> & localbody, Pltoutput & 
 		// pltfile.Output_Grid("after_adp_grid", sphere);
 		// pltfile.Output_Soln("after_adp_soln", sphere);
 	}
-	if (ts%dts_plt == 0 && t > t_sum - 20.0)
+	if (ts%dts_plt == 0 && t > t_sum - 10.0)
 	{
 		pltfile.Output_Soln_Nobody("amr_soln");
+        pltfile.Output_Soln_Onlybody("Body_soln",localbody);
 		if (gridisnew) 
 		{
 			pltfile.Output_Grid_Nobody("amr_grid");
