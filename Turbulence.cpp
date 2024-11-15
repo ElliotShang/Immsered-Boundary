@@ -55,7 +55,7 @@ void uplus_as_function_of_yplus(double & uplus, double & yplus)
 }
 
 void ImageViseddy(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nmv, BoxtoWall & ibboxtopatch) // 在body.cpp中被调用
-{
+{// 应该在这里更新壁面速度，加入ODE求解的结果
 	HGCell & myhg = a_ibcell.hgc;
 	double rt0 = myhg.hgdis + ibboxtopatch.signdis;
 	double ib_rdis = ibboxtopatch.signdis/rt0;

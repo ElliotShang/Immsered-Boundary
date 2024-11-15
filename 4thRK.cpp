@@ -93,22 +93,22 @@ void forthRK2DOF(double & y, double & ydot, double & theta, double & thetadot,
 void computeDerivative_Anal(double h,double & dh,double & d2h, double theta,double & dtheta,double & d2theta,
                             const double & mass, const double & intertia, const double & damp,
                             const double & rotdamp, const double & stif, const double & rotstif,
-                            const double & force, const double & moment, const double & b){
+                            const double & force, const double & moment, const double & b, const double & theta0){
     double numerator = intertia*mass-b*b*cos(theta)*cos(theta)*mass*mass;
-    d2h = -1.0*(intertia*stif/numerator)*h+(-1.0)*(b*cos(theta)*mass*rotstif/numerator)*(theta)
+    d2h = (-1.0)*(intertia*stif/numerator)*h+(-1.0)*(b*cos(theta)*mass*rotstif/numerator)*(theta)
           +(-1.0)*(damp*intertia/numerator)*dh+(-1.0)*((b*cos(theta)*rotdamp*mass/numerator)+(b*intertia*mass*sin(theta)*dtheta/numerator))*dtheta+
-          (force*intertia/numerator)+(b*cos(theta)*mass*moment/numerator);
+          (force*intertia/numerator)+(b*cos(theta)*mass*moment/numerator)+(b*cos(theta)*mass*rotstif*theta0/numerator);
 
-    d2theta = -1.0*(b*cos(theta)*stif*mass/numerator)*h+(-1.0)*(rotstif*mass/numerator)*(theta)
+    d2theta = (-1.0)*(b*cos(theta)*stif*mass/numerator)*h+(-1.0)*(rotstif*mass/numerator)*(theta)
               +(-1.0)*(b*cos(theta)*damp*mass/intertia)*dh+(-1.0)*((rotdamp*mass/numerator)+(b*b*cos(theta)*mass*mass*sin(theta)*dtheta/numerator))*dtheta+
-              (b*cos(theta)*mass*force/numerator)+(mass*moment/numerator);
+              (b*cos(theta)*mass*force/numerator)+(mass*moment/numerator)+(mass*rotstif*theta0/numerator);
 }
 
 // 解析求解耦合方程组
 void forthRK2DOF_Anal(double & y, double & ydot, double & theta, double & thetadot,
                       const double & mass, const double & intertia, const double & damp,
                       const double & rotdamp, const double & stif, const double & rotstif,
-                      const double & force, const double & moment, const double & b, double & timestep)
+                      const double & force, const double & moment, const double & b, double & timestep, double & theta0)
 {
     double y_1 = y;
     double ydot_1 = ydot;
@@ -122,25 +122,25 @@ void forthRK2DOF_Anal(double & y, double & ydot, double & theta, double & thetad
     ydotk1 = ydot_1;
     thetadotk1 = thetadot_1;
     computeDerivative_Anal(y_1,ydotk1,yddotk1, theta_1,thetadotk1,thetaddotk1,
-                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b);
+                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b,theta0);
 
     ydotk2 = ydot_1+0.5*timestep*yddotk1;
     thetadotk2 = thetadot_1+0.5*timestep*thetaddotk1;
     computeDerivative_Anal(y_1+0.5*timestep*ydotk1, ydotk2, yddotk2,
                            theta_1+0.5*timestep*thetadotk1,thetadotk2,thetaddotk2,
-                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b);
+                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b,theta0);
 
     ydotk3 = ydot_1+0.5*timestep*yddotk2;
     thetadotk3 = thetadot_1+0.5*timestep*thetaddotk2;
     computeDerivative_Anal(y_1+0.5*timestep*ydotk2, ydotk3, yddotk3,
                            theta_1+0.5*timestep*thetadotk2,thetadotk3,thetaddotk3,
-                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b);
+                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b,theta0);
 
     ydotk4 = ydot_1+timestep*yddotk3;
     thetadotk4 = thetadot_1+timestep*thetaddotk3;
     computeDerivative_Anal(y_1+timestep*ydotk3, ydotk4, yddotk4,
                            theta_1+timestep*thetadotk3,thetadotk4,thetaddotk4,
-                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b);
+                           mass,intertia,damp,rotdamp,stif,rotstif,force,moment,b,theta0);
 
     y = y_1 + timestep/6.0*(ydotk1 + 2.0*ydotk2 + 2.0*ydotk3 + ydotk4);
     ydot = ydot_1 + timestep/6.0*(yddotk1 + 2.0*yddotk2 + 2.0*yddotk3 + yddotk4);

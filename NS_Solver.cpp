@@ -535,7 +535,7 @@
 				double fvis = (vsflowptr[1][1][1]->viseddy+vsflowptr[neibx][neiby][neibz]->viseddy)*0.5;
 				double froe = (vsflowptr[1][1][1]->roe+vsflowptr[neibx][neiby][neibz]->roe)*0.5;
 				double faceroexvis = fvis + mu0/froe;
-				double mut0 = Viseddy2mut(fvis, froe, mu0);
+				double mut0 = Viseddy2mut(fvis, froe, mu0); // 此处返回涡粘性量，应该在壁面速度更新处引入ODE求解
 				mu0 += mut0;
 				qk0 += mut0/(Re*Pr_tur*(gama-1)*pow(Ma,2));
 				mutflux[level_n][bn] = faceroexvis*(dvisx*theface.keisa[0]+dvisy*theface.keisa[1]+dvisz*theface.keisa[2])/segma;

@@ -30,6 +30,6 @@ void forthRK2DOF(double & y, double & ydot, double & theta, double & thetadot,
 void forthRK2DOF_Anal(double & y, double & ydot, double & theta, double & thetadot,
                       const double & mass, const double & intertia, const double & damp,
                       const double & rotdamp, const double & stif, const double & rotstif,
-                      const double & force, const double & moment, const double & b, double & timestep);
+                      const double & force, const double & moment, const double & b, double & timestep, double & theta0);
 
 #endif
