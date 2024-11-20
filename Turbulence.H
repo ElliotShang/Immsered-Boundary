@@ -26,6 +26,8 @@ double Viseddy2mut(double & cellvis, double & cellroe, double & cellmu);
 
 void ImageViseddy(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nmv, BoxtoWall & ibboxtopatch);
 
+void ImageViseddy_PressureGrad(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nmv, BoxtoWall & ibboxtopatch);
+
 void ImageViseddy_Domain(FlowVariables & refv, FlowVariables & bcvar, Pointxyz & patv, Pointxyz & nmv, 
 	double & refdis, double & targetdis);
 

@@ -137,6 +137,88 @@ void ImageViseddy(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nmv, BoxtoWall 
 #endif	
 }
 
+void ImageViseddy_PressureGrad(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nmv, BoxtoWall & ibboxtopatch)
+{
+	HGCell & myhg = a_ibcell.hgc;
+	double rt0 = myhg.hgdis + ibboxtopatch.signdis;
+	double ib_rdis = ibboxtopatch.signdis/rt0;
+
+	Pointxyz hg_vel_vect = Pointxyz(myhg.fv.u, myhg.fv.v, myhg.fv.w);
+	double hg_veln = hg_vel_vect.dot(nmv);
+	Pointxyz hg_veln_vect = Pointxyz(hg_veln*nmv[0], hg_veln*nmv[1], hg_veln*nmv[2]);
+	Pointxyz hg_velt_vect = hg_vel_vect - hg_veln_vect;
+	double hg_velt = hg_velt_vect.length(); // 外伸点切向速度大小
+
+	double wall_veln = patv.dot(nmv); // 带有运动的壁面速度？
+	Pointxyz wall_veln_vect = nmv*wall_veln;
+	Pointxyz wall_velt_vect = patv - wall_veln_vect;
+	double wall_velt = wall_velt_vect.length();
+
+	Pointxyz df_vect = hg_velt_vect-wall_velt_vect;
+	double df_velt = df_vect.length();
+
+	double hg_mu = sqrt(pow(myhg.fv.T, 3))*((1.0+S_over_T_ref)/(myhg.fv.T+S_over_T_ref));
+	double hg_viseddy = hg_mu/myhg.fv.roe;
+	a_ibcell.hg_viseddy = hg_viseddy;
+	double hg_re = df_velt*rt0/hg_viseddy*Re; // 求当地雷诺数Re_y,为什么乘上Re? 外伸点当地雷诺数
+	double hg_yplus; // 外伸点yplus
+	yplus_as_function_of_re(hg_yplus, hg_re);
+	a_ibcell.hg_yplus = hg_yplus;
+	a_ibcell.hg_vt = df_velt; // 外伸点的切向速度
+	/*Normalized friction velocity*/
+	a_ibcell.ut = hg_yplus*hg_viseddy/rt0/Re;// 壁面单元的切向速度
+	/*Use normalized friction velocity to obtain the yplus*/
+	a_ibcell.yplus = ib_rdis*hg_yplus; // 壁面单元的yplus
+	uplus_as_function_of_yplus(a_ibcell.uplus, a_ibcell.yplus);
+	double ib_velt = a_ibcell.uplus*a_ibcell.ut; // 壁面切向速度
+	double ib_r0;
+	if (abs(df_velt) < 0.00000001)
+	{
+	 	ib_r0 = 0.0;
+	 	a_ibcell.tangdir = Pointxyz(0.0,0.0,0.0);
+	}
+	else
+	{
+		ib_r0 = ib_velt/df_velt;
+		a_ibcell.tangdir = df_vect/df_velt;
+	}
+	Pointxyz old_ib_vel = Pointxyz(a_ibcell.fv.u, a_ibcell.fv.v, a_ibcell.fv.w);
+	Pointxyz ib_nvect = wall_veln_vect + (hg_veln_vect-wall_veln_vect)*ib_rdis;
+	a_ibcell.vn = hg_veln_vect-wall_veln_vect;
+	Pointxyz ib_tvect = wall_velt_vect + df_vect*ib_r0;
+	a_ibcell.fv.u = ib_nvect[0]+ib_tvect[0];
+	a_ibcell.fv.v = ib_nvect[1]+ib_tvect[1];
+	a_ibcell.fv.w = ib_nvect[2]+ib_tvect[2];
+	a_ibcell.fv.viseddy = kappa*a_ibcell.yplus; // 求解近壁面处的涡粘性
+	a_ibcell.pre_grad = -((a_ibcell.fv.u-old_ib_vel[0])*nmv[0]+
+						  (a_ibcell.fv.v-old_ib_vel[1])*nmv[1]+
+						  (a_ibcell.fv.w-old_ib_vel[2])*nmv[2])/dt*a_ibcell.fv.roe;
+	//a_ibcell.fv.p = myhg.fv.p;
+	a_ibcell.fv.p = myhg.fv.p; // - a_ibcell.pre_grad*myhg.hgdis;
+	//if (a_ibcell.fv.p < myhg.fv.p*0.5 || a_ibcell.fv.p > myhg.fv.p * 2.0) a_ibcell.fv.p = myhg.fv.p;
+	// if (a_ibcell.fv.p < myhg.fv.p*0.5)
+	// {
+	// 	a_ibcell.fv.p = myhg.fv.p*0.5;
+	// }
+	// else if (a_ibcell.fv.p > myhg.fv.p*2.0)
+	// {
+	// 	a_ibcell.fv.p = myhg.fv.p*2.0;
+	// }
+	//a_ibcell.fv.T = myhg.fv.T + 0.5*Pr_cubicroot/Cp*(pow(hg_velt, 2) - (ib_tvect[0]*ib_tvect[0]+ib_tvect[1]*ib_tvect[1]+ib_tvect[2]*ib_tvect[2]));
+	a_ibcell.fv.T = myhg.fv.T + 0.5*Pr_cubicroot/Cp*(pow(df_velt, 2) - pow(ib_velt, 2)); // Crocco-Busemann方程计算温度
+	//if (a_ibcell.fv.T < myhg.fv.T*0.5 || a_ibcell.fv.T > myhg.fv.T*2.0) a_ibcell.fv.T = myhg.fv.T;
+	Get_roe_ideal_gas(a_ibcell.fv);
+	Get_E(a_ibcell.fv);
+	// 	a_ibcell.boxpatch[0].signdis,myhg.hgdis,hg_velt, hg_veln, hg_re, hg_yplus, ut, ib_yplus, ib_velt);
+#ifdef DEBUG
+	if (ibboxtopatch.signdis < 0.0)
+	{
+		printf("The ib cell for viseddy signdis negative!!! %f\n", ibboxtopatch.signdis);
+		MPI_Abort(MPI_COMM_WORLD, 49);
+	}
+#endif
+}
+
 void ImageViseddy_Domain(FlowVariables & refv, FlowVariables & bcvar, Pointxyz & patv, Pointxyz & nmv, // 在BCVaslyes中被调用，计算边界单元处的流场原始变量
 	double & refdis, double & targetdis)
 {
