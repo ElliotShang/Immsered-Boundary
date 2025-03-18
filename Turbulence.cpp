@@ -182,15 +182,34 @@ void ImageViseddy_PressureGrad(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nm
     double y_ib = ibboxtopatch.signdis; // IB单元到壁面的有效距离
     double mu_eff = hg_mu+a_ibcell.fv.viseddy;
     double tau_w = a_ibcell.fv.roe * a_ibcell.ut * a_ibcell.ut; // 壁面剪切应力
-    int N = 20;
-    double dy = y_ib / N;
-    double u_ib = 0.0;
-    for (int i = 0; i < N; i++) {
-        double y_mid = (i + 0.5) * dy;
-        double du_dy = (tau_w + a_ibcell.pre_grad * y_mid) / mu_eff;
-        u_ib += du_dy * dy;
+    // 定义函数 f(y) = du/dy = (τ_w + pre_grad*y) / [μ + μₜ(y)]
+    // 注意：a_ibcell.pre_grad 在之前的时间步已经计算，此处作为已知常量
+    auto f = [=](double y) -> double {
+        double yplus_local = (y / y_ib) * a_ibcell.yplus;   // 线性假设：y⁺随 y 线性变化
+        double mu_t_local = kappa * yplus_local;
+        double mu_eff = hg_mu + mu_t_local;
+        return (tau_w + a_ibcell.pre_grad * y) / mu_eff;
+    };
+    int N = 16;
+     // Simpson 法要求分割数为偶数
+    if (N % 2 == 1) {
+        N++;
     }
-    double ib_velt = u_ib; // IB 单元处切向速度
+    double dy = y_ib / N;
+    double u_ib = f(0.0) + f(y_ib);
+    double sum_odd = 0.0;
+    double sum_even = 0.0;
+    for (int i = 1; i < N; i++) {
+        double y_i = i * dy;
+        if (i % 2 == 1)
+            sum_odd += f(y_i);
+        else
+            sum_even += f(y_i);
+    }
+    u_ib = (dy / 3.0) * (f(0.0) + f(y_ib) + 4.0 * sum_odd + 2.0 * sum_even);
+    // u_ib 为壁面单元处的切向速度（积分结果）
+    double ib_velt = u_ib;
+    // 根据外推点与壁面间的切向差值确定插值比例 ib_r0 以及切向速度方向
     double ib_r0;
     if (abs(df_velt) < 1e-8) {
          ib_r0 = 0.0;
