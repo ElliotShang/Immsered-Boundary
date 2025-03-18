@@ -1422,7 +1422,7 @@ void Body::IBConditions_Image(Mesh & amesh, vector<Body> & abody)
 					patnv,
 					ibboxtopatch.signdis);
 #else
-				ImageViseddy(amesh.m_dis[i], patv, patnv, ibboxtopatch);
+				ImageViseddy_PressureGrad(amesh.m_dis[i], patv, patnv, ibboxtopatch);
 #endif								
 			}
 

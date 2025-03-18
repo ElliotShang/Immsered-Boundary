@@ -157,39 +157,59 @@ void ImageViseddy_PressureGrad(IBCell & a_ibcell, Pointxyz & patv, Pointxyz & nm
 	Pointxyz df_vect = hg_velt_vect-wall_velt_vect;
 	double df_velt = df_vect.length();
 
+    // 计算分子粘性（hg_mu）及外推点处的涡粘性
 	double hg_mu = sqrt(pow(myhg.fv.T, 3))*((1.0+S_over_T_ref)/(myhg.fv.T+S_over_T_ref));
 	double hg_viseddy = hg_mu/myhg.fv.roe;
 	a_ibcell.hg_viseddy = hg_viseddy;
+
+    // 计算外推点局部雷诺数（Re_y）与 yplus
 	double hg_re = df_velt*rt0/hg_viseddy*Re; // 求当地雷诺数Re_y,为什么乘上Re? 外伸点当地雷诺数
 	double hg_yplus; // 外伸点yplus
 	yplus_as_function_of_re(hg_yplus, hg_re);
 	a_ibcell.hg_yplus = hg_yplus;
 	a_ibcell.hg_vt = df_velt; // 外伸点的切向速度
-	/*Normalized friction velocity*/
+
+	/*Normalized friction velocity* 归一化摩擦速度*/
 	a_ibcell.ut = hg_yplus*hg_viseddy/rt0/Re;// 壁面单元的切向速度
 	/*Use normalized friction velocity to obtain the yplus*/
 	a_ibcell.yplus = ib_rdis*hg_yplus; // 壁面单元的yplus
-	uplus_as_function_of_yplus(a_ibcell.uplus, a_ibcell.yplus);
-	double ib_velt = a_ibcell.uplus*a_ibcell.ut; // 壁面切向速度
-	double ib_r0;
-	if (abs(df_velt) < 0.00000001)
-	{
-	 	ib_r0 = 0.0;
-	 	a_ibcell.tangdir = Pointxyz(0.0,0.0,0.0);
-	}
-	else
-	{
-		ib_r0 = ib_velt/df_velt;
-		a_ibcell.tangdir = df_vect/df_velt;
-	}
+
+	// —— 利用压力梯度公式积分求解切向速度 u ——
+    // 原方程： d/dy[(μ+μ_t)du/dy] = dp/dx
+    // 其中，预先计算的压力梯度 a_ibcell.pre_grad 已由上一次步长计算得到，
+    // 壁面剪切应力 τ_w = ρ * u_τ^2，取 u_τ = a_ibcell.ut
+    // 有效粘性： μ_eff = μ + μ_t ，其中 μ_t 存储于 a_ibcell.fv.viseddy 中
+    double y_ib = ibboxtopatch.signdis; // IB单元到壁面的有效距离
+    double mu_eff = hg_mu+a_ibcell.fv.viseddy;
+    double tau_w = a_ibcell.fv.roe * a_ibcell.ut * a_ibcell.ut; // 壁面剪切应力
+    int N = 20;
+    double dy = y_ib / N;
+    double u_ib = 0.0;
+    for (int i = 0; i < N; i++) {
+        double y_mid = (i + 0.5) * dy;
+        double du_dy = (tau_w + a_ibcell.pre_grad * y_mid) / mu_eff;
+        u_ib += du_dy * dy;
+    }
+    double ib_velt = u_ib; // IB 单元处切向速度
+    double ib_r0;
+    if (abs(df_velt) < 1e-8) {
+         ib_r0 = 0.0;
+         a_ibcell.tangdir = Pointxyz(0.0, 0.0, 0.0);
+    } else {
+         ib_r0 = ib_velt / df_velt;
+         a_ibcell.tangdir = df_vect / df_velt;
+    }
 	Pointxyz old_ib_vel = Pointxyz(a_ibcell.fv.u, a_ibcell.fv.v, a_ibcell.fv.w);
+     // 计算插值后的法向速度
 	Pointxyz ib_nvect = wall_veln_vect + (hg_veln_vect-wall_veln_vect)*ib_rdis;
 	a_ibcell.vn = hg_veln_vect-wall_veln_vect;
+    // 计算插值后的切向速度
 	Pointxyz ib_tvect = wall_velt_vect + df_vect*ib_r0;
 	a_ibcell.fv.u = ib_nvect[0]+ib_tvect[0];
 	a_ibcell.fv.v = ib_nvect[1]+ib_tvect[1];
 	a_ibcell.fv.w = ib_nvect[2]+ib_tvect[2];
 	a_ibcell.fv.viseddy = kappa*a_ibcell.yplus; // 求解近壁面处的涡粘性
+    // 更新压力梯度（基于速度变化的差分计算）
 	a_ibcell.pre_grad = -((a_ibcell.fv.u-old_ib_vel[0])*nmv[0]+
 						  (a_ibcell.fv.v-old_ib_vel[1])*nmv[1]+
 						  (a_ibcell.fv.w-old_ib_vel[2])*nmv[2])/dt*a_ibcell.fv.roe;
